@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#08080c" />
+  <meta name="description" content="MacTube — Convert and download videos in your preferred format." />
+  <title>MacTube — Convert Videos, Beautifully</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --background: #08080c;
+      --surface: rgba(27, 27, 34, 0.72);
+      --surface-strong: rgba(32, 32, 40, 0.92);
+      --border: rgba(255, 255, 255, 0.09);
+      --border-strong: rgba(255, 255, 255, 0.15);
+      --text: #f5f5f7;
+      --muted: #97979f;
+      --blue: #0a84ff;
+      --purple: #bf5af2;
+      --yellow: #ffd60a;
+    }
+    * { box-sizing: border-box; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    html { scroll-behavior: smooth; background: var(--background); }
+    body {
+      margin: 0; min-width: 320px; min-height: 100vh; overflow-x: hidden;
+      background:
+        radial-gradient(circle at 10% -10%, rgba(10, 132, 255, 0.18), transparent 34rem),
+        radial-gradient(circle at 90% 40%, rgba(191, 90, 242, 0.13), transparent 34rem),
+        var(--background);
+      color: var(--text);
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button, input { font: inherit; }
+    .orb { position: fixed; z-index: 0; border-radius: 999px; filter: blur(120px); pointer-events: none; }
+    .orb-one { top: -220px; left: -190px; width: 520px; height: 520px; background: rgba(10, 132, 255, 0.32); animation: driftOne 20s ease-in-out infinite; }
+    .orb-two { right: -190px; bottom: -220px; width: 500px; height: 500px; background: rgba(191, 90, 242, 0.25); animation: driftTwo 24s ease-in-out infinite; }
+    @keyframes driftOne { 50% { transform: translate(110px, 85px); } }
+    @keyframes driftTwo { 50% { transform: translate(-90px, -100px); } }
+    .glass {
+      background: rgba(24, 24, 31, 0.64);
+      border: 1px solid var(--border);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(28px) saturate(160%);
+    }
+    .app-window {
+      background: linear-gradient(180deg, rgba(30, 30, 38, 0.93), rgba(17, 17, 23, 0.95));
+      border: 1px solid var(--border-strong);
+      box-shadow: 0 34px 90px -25px rgba(0, 0, 0, 0.78);
+    }
+    .url-input {
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid var(--border);
+      color: var(--text);
+      transition: all 180ms ease;
+    }
+    .url-input:focus {
+      border-color: var(--blue);
+      background: rgba(0, 0, 0, 0.4);
+      box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.16);
+      outline: none;
+    }
+    .primary-button {
+      background: linear-gradient(180deg, #1590ff, #0071e3);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 5px 18px rgba(10, 132, 255, 0.34);
+      transition: all 180ms ease;
+    }
+    .primary-button:hover { transform: translateY(-1px); filter: brightness(1.08); }
+    .primary-button:active { transform: translateY(0); }
+    .format-card {
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid var(--border);
+      transition: all 180ms ease;
+    }
+    .format-card:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.065);
+      border-color: rgba(10, 132, 255, 0.42);
+    }
+    .format-card.selected {
+      background: rgba(10, 132, 255, 0.11);
+      border-color: rgba(10, 132, 255, 0.65);
+    }
+    .format-card.pro:hover { border-color: rgba(255, 214, 10, 0.5); }
+    .spinner {
+      width: 19px; height: 19px;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      border-top-color: white;
+      border-radius: 999px;
+      animation: spin 700ms linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .ad-banner-container {
+      width: 100%;
+      max-width: 468px;
+      min-height: 60px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .ad-banner-leaderboard { margin: 2.5rem auto 0 auto; padding: 0 0.75rem; }
+    .ad-banner-rectangle { margin: 1.5rem auto; }
+    .ad-frame { border: 0; display: block; width: 468px; height: 60px; max-width: 100%; }
+    .modal { animation: modalPop 200ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+    @keyframes modalPop {
+      from { opacity: 0; transform: scale(0.96) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .toast {
+      animation: toastIn 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 500ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="orb orb-one"></div>
+  <div class="orb orb-two"></div>
+
+  <div class="max-w-5xl mx-auto px-6 pt-12 pb-20 relative z-10">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-12">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+          <span class="text-white font-bold text-xl">M</span>
+        </div>
+        <div>
+          <div class="font-semibold text-2xl tracking-tight">MacTube</div>
+          <div class="text-[10px] text-[#97979f] -mt-1">PREMIUM VIDEO CONVERTER</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 text-sm">
+        <div class="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[#97979f]">macOS • iOS • Web</div>
+      </div>
+    </div>
+
+    <!-- Top Ad (Leaderboard variant) -->
+    <div class="ad-banner-container ad-banner-leaderboard" id="ad-leaderboard">
+      <div id="ad-leaderboard-content"></div>
+    </div>
+
+    <div class="max-w-2xl mx-auto">
+
+      <!-- Main Card -->
+      <div class="app-window rounded-3xl p-8 glass mt-8 fade-up">
+        <div class="text-center mb-8">
+          <div class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/5 text-xs tracking-widest mb-4">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+            BEAUTIFULLY SIMPLE
+          </div>
+          <h1 class="text-4xl sm:text-5xl font-semibold tracking-tighter">Convert videos.<br />Instantly.</h1>
+          <p class="mt-3 text-[#97979f]">Paste any video link. Download in seconds.</p>
+        </div>
+
+        <!-- URL Input -->
+        <div class="flex flex-col sm:flex-row gap-3">
+          <input
+            id="url-input"
+            type="text"
+            class="url-input flex-1 px-6 py-4 rounded-2xl text-lg placeholder:text-[#74747d]"
+            placeholder="https://youtube.com/watch?v=..."
+          />
+          <button onclick="convertVideo()" id="convert-btn" class="primary-button px-10 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 min-w-[140px] text-white">
+            <span id="btn-text">Convert</span>
+            <div id="spinner" class="spinner hidden"></div>
+          </button>
+        </div>
+        <div id="error-msg" class="hidden mt-3 text-red-400 text-sm text-center"></div>
+      </div>
+
+      <!-- Middle Ad (Rectangle variant) -->
+      <div class="ad-banner-container ad-banner-rectangle" id="ad-rectangle">
+        <div id="ad-rectangle-content"></div>
+      </div>
+
+      <!-- Results -->
+      <div id="results" class="hidden mt-8">
+        <div class="flex items-center justify-between mb-4 px-1">
+          <div class="font-semibold">Available formats</div>
+          <div class="text-xs px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400">Ready to download</div>
+        </div>
+
+        <!-- Free Tier -->
+        <div class="mb-6">
+          <div class="text-xs uppercase tracking-widest text-[#97979f] mb-3 px-1">Free Tier</div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div onclick="downloadVideo('360p')" class="format-card cursor-pointer rounded-2xl p-5 flex items-center justify-between">
+              <div>
+                <div class="font-semibold">360p</div>
+                <div class="text-xs text-[#97979f]">MP4 • 480×360</div>
+              </div>
+              <div class="text-emerald-400 text-sm font-medium">Free</div>
+            </div>
+            <div onclick="downloadVideo('480p')" class="format-card cursor-pointer rounded-2xl p-5 flex items-center justify-between">
+              <div>
+                <div class="font-semibold">480p</div>
+                <div class="text-xs text-[#97979f]">MP4 • 854×480</div>
+              </div>
+              <div class="text-emerald-400 text-sm font-medium">Free</div>
+            </div>
+            <div onclick="downloadVideo('720p')" class="format-card cursor-pointer rounded-2xl p-5 flex items-center justify-between">
+              <div>
+                <div class="font-semibold">720p</div>
+                <div class="text-xs text-[#97979f]">MP4 • 1280×720</div>
+              </div>
+              <div class="text-emerald-400 text-sm font-medium">Free</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pro Tier -->
+        <div>
+          <div class="text-xs uppercase tracking-widest text-[#97979f] mb-3 px-1">Pro Tier</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div onclick="downloadVideo('1080p')" class="format-card pro cursor-pointer rounded-2xl p-5 flex items-center justify-between">
+              <div>
+                <div class="font-semibold">1080p</div>
+                <div class="text-xs text-[#97979f]">MP4 • 1920×1080</div>
+              </div>
+              <div class="text-[#ffd60a] text-sm font-medium">PRO</div>
+            </div>
+            <div onclick="downloadVideo('1440p')" class="format-card pro cursor-pointer rounded-2xl p-5 flex items-center justify-between">
+              <div>
+                <div class="font-semibold">1440p</div>
+                <div class="text-xs text-[#97979f]">MP4 • 2560×1440</div>
+              </div>
+              <div class="text-[#ffd60a] text-sm font-medium">PRO</div>
+            </div>
+            <div onclick="downloadVideo('4K')" class="format-card pro cursor-pointer rounded-2xl p-5 flex items-center justify-between">
+              <div>
+                <div class="font-semibold">4K</div>
+                <div class="text-xs text-[#97979f]">MP4 • 3840×2160</div>
+              </div>
+              <div class="text-[#ffd60a] text-sm font-medium">PRO</div>
+            </div>
+            <div onclick="downloadVideo('MP3')" class="format-card pro cursor-pointer rounded-2xl p-5 flex items-center justify-between">
+              <div>
+                <div class="font-semibold">MP3</div>
+                <div class="text-xs text-[#97979f]">Audio • 320kbps</div>
+              </div>
+              <div class="text-[#ffd60a] text-sm font-medium">PRO</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="mt-16 pt-8 border-t border-white/5 text-center text-xs text-[#74747d]">
+      <p>MacTube is a demo interface. Not affiliated with YouTube or Google.</p>
+      <p class="mt-1">© 2025 MacTube. All rights reserved.</p>
+    </div>
+  </div>
+
+  <!-- Pro Modal -->
+  <div id="pro-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-6">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="closeModal()"></div>
+    <div class="modal app-window rounded-3xl p-8 max-w-sm w-full text-center relative glass">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-br from-[#ffd60a] to-[#ff9f0a] flex items-center justify-center mb-4">
+        <span class="text-black font-bold text-xl">★</span>
+      </div>
+      <h2 class="text-2xl font-semibold tracking-tight">Unlock MacTube Pro</h2>
+      <p class="mt-2 text-sm text-[#97979f]">Get 1080p, 4K and MP3 exports with zero limits.</p>
+      <ul class="mt-5 space-y-2 text-sm text-left mx-auto w-fit">
+        <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Up to 4K quality</li>
+        <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> MP3 audio extraction</li>
+        <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> No ads, no waiting</li>
+      </ul>
+      <button onclick="closeModal()" class="primary-button w-full mt-6 py-3 rounded-2xl font-semibold text-white">Upgrade — $4.99/mo</button>
+      <button onclick="closeModal()" class="mt-3 text-xs text-[#97979f] hover:text-white transition">Maybe later</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 glass px-5 py-3 rounded-2xl text-sm toast"></div>
+
+  <script>
+    /* ---------------------------------------------
+       AdBanner — Adsterra 468x60 embed
+       Equivalent of src/components/AdBanner.tsx
+       Loaded in isolated iframes so both the
+       leaderboard and rectangle variants can
+       coexist on the page safely.
+    --------------------------------------------- */
+    function loadAdBanner(containerId) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      const adScriptHtml = `
+        <div style="width: 100%; display: flex; justify-content: center; align-items: center;">
+          <script type="text/javascript">
+            atOptions = {
+              'key' : '09d7bd3f42c12d0d3f3bfe3df3296193',
+              'format' : 'iframe',
+              'height' : 60,
+              'width' : 468,
+              'params' : {}
+            };
+          <\/script>
+          <script type="text/javascript" src="https://highperformanceformat.com"><\/script>
+        </div>
+      `;
+
+      const frame = document.createElement('iframe');
+      frame.className = 'ad-frame';
+      frame.setAttribute('scrolling', 'no');
+      frame.setAttribute('frameborder', '0');
+      frame.srcdoc = `<!DOCTYPE html><html><head><style>body{margin:0;display:flex;justify-content:center;align-items:center;overflow:hidden;}</style></head><body>${adScriptHtml}</body></html>`;
+      container.appendChild(frame);
+    }
+
+    loadAdBanner('ad-leaderboard-content');
+    loadAdBanner('ad-rectangle-content');
+
+    /* ------------------ App logic ------------------ */
+    const PRO_FORMATS = ['1080p', '1440p', '4K', 'MP3'];
+    let isConverting = false;
+
+    function isValidUrl(value) {
+      try {
+        const url = new URL(value.trim());
+        return url.protocol === 'http:' || url.protocol === 'https:';
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function showError(message) {
+      const el = document.getElementById('error-msg');
+      el.textContent = message;
+      el.classList.remove('hidden');
+    }
+
+    function clearError() {
+      const el = document.getElementById('error-msg');
+      el.textContent = '';
+      el.classList.add('hidden');
+    }
+
+    function convertVideo() {
+      if (isConverting) return;
+      const input = document.getElementById('url-input');
+      const btnText = document.getElementById('btn-text');
+      const spinner = document.getElementById('spinner');
+
+      clearError();
+
+      if (!isValidUrl(input.value)) {
+        showError('Please enter a valid video URL (e.g. https://youtube.com/watch?v=...)');
+        input.focus();
+        return;
+      }
+
+      isConverting = true;
+      btnText.textContent = 'Converting';
+      spinner.classList.remove('hidden');
+
+      setTimeout(() => {
+        isConverting = false;
+        btnText.textContent = 'Convert';
+        spinner.classList.add('hidden');
+
+        const results = document.getElementById('results');
+        results.classList.remove('hidden');
+        results.classList.add('fade-up');
+        results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        showToast('Video analyzed — formats ready below.');
+      }, 1600);
+    }
+
+    function downloadVideo(format) {
+      if (PRO_FORMATS.includes(format)) {
+        openModal();
+        return;
+      }
+      showToast(`Downloading ${format} MP4… (demo)`);
+    }
+
+    function openModal() {
+      document.getElementById('pro-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('pro-modal').classList.add('hidden');
+    }
+
+    let toastTimer;
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.add('hidden'), 2800);
+    }
+
+    document.getElementById('url-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') convertVideo();
+    });
+
+    document.getElementById('url-input').addEventListener('input', clearError);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+  </script>
+</body>
+</html>
